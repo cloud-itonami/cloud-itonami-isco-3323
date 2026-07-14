@@ -4,6 +4,16 @@ Open Occupation Blueprint for **ISCO-08 3323**: Buyers.
 
 This repository designs a forkable OSS business for an independent procurement and sourcing practice: a receiving-dock intake and inventory-tagging robot manages incoming shipments under a governor-gated actor, so the practice keeps its own purchasing records instead of renting a closed procurement SaaS.
 
+**Maturity: `:implemented`.** `ProcurementActor` (langgraph-clj state graph) with `ProcurementAdvisor` → `ProcurementGovernor` gate. Langgraph state: `:intake -> :advise -> :govern -> :decide -+-> :commit (:ok?) +-> :request-approval (:escalate?, human-in-the-loop interrupt) +-> :hold (:hard?)`. Tests: 14 deftest, 29 assertions, all green.
+
+HARD invariants:
+- Budget-ceiling arithmetic: proposed order amount must not exceed client's registered `:budget-ceiling` (an order beyond the ceiling is unauthorized procurement, not a valid purchase order)
+- Supplier verification presence: supplier must have `:supplier-verified?` true before any order can be placed (offering a purchase order from an unverified supplier is an unauthorized supplier relationship, not verified procurement)
+
+Always-escalate operations (require human sign-off regardless of confidence):
+- `:approve-over-budget-order` — purchase orders exceeding the client's budget ceiling
+- `:approve-unverified-supplier-onboarding` — establishing new supplier relationships without verification
+
 ## Robotics premise
 
 All cloud-itonami verticals are designed on the premise that a **robot performs
