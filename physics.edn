@@ -1,0 +1,42 @@
+;; What this occupation's robot physically does, declared for
+;; kotoba.robotics.process (kotoba-lang/robotics). `kbb -M:physics` runs it.
+;;
+;; README "Robotics premise": a receiving-dock intake and inventory-tagging
+;; robot performs incoming-shipment scanning, tagging and staging (ISCO 3323
+;; buyers). Its physical work: moving received pallets from the dock door to
+;; the staging lane, depalletizing cartons for tagging, and bench-testing a
+;; strap sample from an incoming shipment during receiving inspection.
+;;
+;; Every number without a cited source is marked `estimate` in its :basis.
+;; Replacing an estimate with a sourced value is this bot's growth work.
+{:physics/schema "itonami.physical-ai.spec.v1"
+ :repo "cloud-itonami/cloud-itonami-isco-3323"
+ :cases
+ [{:id :pallet-dock-to-staging
+   :kind :transport
+   :procedure "pallet-moving robot carries a received pallet 40 m from the dock door to the staging lane"
+   :params {:mass-kg 250.0 :distance-m 40.0 :v-max-mps 1.5 :a-max-mps2 0.4
+            :brake-decel-mps2 0.6 :drive-force-n 600.0 :crr 0.015
+            :cog-height-m 0.80 :support-half-length-m 0.50}
+   :sweep {:param :payload-kg :values [200.0 400.0 600.0 800.0 1000.0]}
+   :quantity :cycle-time-s
+   :limit {:max 35.0 :basis "estimate: one dock-to-lane leg inside the per-pallet unloading takt of a single dock door"}
+   :boundary {:lo 100.0 :hi 3500.0}}
+  {:id :carton-depalletize-to-tagging
+   :kind :manipulator
+   :procedure "arm picks a carton off the pallet top layer and places it on the tagging conveyor"
+   :params {:l1-m 0.80 :l2-m 0.70 :m1-kg 18.0 :m2-kg 10.0
+            :from [1.00 0.10] :to [0.50 1.10] :duration-s 3.0 :steps 600}
+   :sweep {:param :payload-kg :values [5.0 10.0 15.0 20.0 25.0]}
+   :quantity :peak-tau1-nm
+   :limit {:max 600.0 :basis "estimate: continuous shoulder torque of a ~20 kg-payload palletizing arm"}
+   :boundary {:lo 1.0 :hi 60.0}}
+  {:id :pallet-strap-sample-tensile
+   :kind :material
+   :procedure "receiving inspection pulls a 100 mm sample of 19 x 0.8 mm steel strapping from an incoming shipment in the bench tester"
+   :params {:length-m 0.10 :area-m2 1.52e-5 :youngs-modulus-pa 200.0e9 :yield-stress-pa 700.0e6
+            :hardening-pa 2.0e9 :density-kg-m3 7850.0}
+   :sweep {:param :max-force-n :values [4000.0 7000.0 10000.0 12000.0 14000.0]}
+   :quantity :final-strain
+   :limit {:max 0.01 :basis "estimate: a strap passing inspection keeps residual stretch under 1 % at its working tension"}
+   :boundary {:lo 2000.0 :hi 16000.0}}]}
